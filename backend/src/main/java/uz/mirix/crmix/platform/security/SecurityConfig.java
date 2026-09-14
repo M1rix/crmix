@@ -41,7 +41,11 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
-                                "/api/v1/tenants/register", "/api/v1/auth/**", "/actuator/health", "/actuator/info")
+                                "/api/v1/tenants/register",
+                                "/api/v1/auth/**",
+                                "/api/v1/integrations/telegram/webhook",
+                                "/actuator/health",
+                                "/actuator/info")
                         .permitAll()
                         .requestMatchers("/actuator/metrics/**", "/actuator/prometheus")
                         .hasRole("OWNER")
@@ -92,7 +96,7 @@ public class SecurityConfig {
         var config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id", "X-Telegram-Bot-Api-Secret-Token"));
         config.setExposedHeaders(List.of("X-Correlation-Id"));
         config.setAllowCredentials(true);
         var source = new UrlBasedCorsConfigurationSource();

@@ -22,6 +22,7 @@ CREATE TABLE notification_log (
     appointment_id UUID REFERENCES appointment(id) ON DELETE CASCADE,
     channel VARCHAR(30) NOT NULL,
     template_code VARCHAR(80) NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     status VARCHAR(30) NOT NULL,
     scheduled_for TIMESTAMPTZ NOT NULL,
     attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 3),

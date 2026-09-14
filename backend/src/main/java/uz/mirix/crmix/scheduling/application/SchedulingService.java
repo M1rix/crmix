@@ -89,7 +89,14 @@ public class SchedulingService {
         } catch (DataIntegrityViolationException exception) {
             throw slotConflict();
         }
-        eventPublisher.publishEvent(new AppointmentCreatedEvent(tenantId, entity.getId(), clientId, scheduledAt));
+        eventPublisher.publishEvent(new AppointmentCreatedEvent(
+                tenantId,
+                entity.getId(),
+                clientId,
+                scheduledAt,
+                employee.getFullName(),
+                service.getName(),
+                tenant.getTimeZone()));
         return AppointmentView.from(entity);
     }
 

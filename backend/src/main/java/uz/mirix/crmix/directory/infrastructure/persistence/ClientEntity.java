@@ -26,6 +26,9 @@ public class ClientEntity {
     @Column(name = "telegram_chat_id")
     private Long telegramChatId;
 
+    @Column(nullable = false)
+    private String locale;
+
     private String notes;
 
     @Column(name = "created_at", nullable = false)
@@ -45,6 +48,7 @@ public class ClientEntity {
         entity.tenantId = tenantId;
         entity.fullName = fullName;
         entity.phone = phone;
+        entity.locale = "ru";
         entity.notes = notes;
         entity.createdAt = now;
         entity.updatedAt = now;
@@ -68,6 +72,7 @@ public class ClientEntity {
     public String getFullName() { return fullName; }
     public String getPhone() { return phone; }
     public Long getTelegramChatId() { return telegramChatId; }
+    public String getLocale() { return locale; }
     public String getNotes() { return notes; }
     public long getVersion() { return version; }
 }
