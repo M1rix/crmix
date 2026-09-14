@@ -64,6 +64,8 @@ $$;
 
 ALTER TABLE app_user ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_user FORCE ROW LEVEL SECURITY;
+CREATE POLICY app_user_access_gate ON app_user
+    AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY app_user_tenant_isolation ON app_user
     AS RESTRICTIVE
     USING (tenant_id = current_tenant_id())
@@ -71,6 +73,8 @@ CREATE POLICY app_user_tenant_isolation ON app_user
 
 ALTER TABLE refresh_token ENABLE ROW LEVEL SECURITY;
 ALTER TABLE refresh_token FORCE ROW LEVEL SECURITY;
+CREATE POLICY refresh_token_access_gate ON refresh_token
+    AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY refresh_token_tenant_isolation ON refresh_token
     AS RESTRICTIVE
     USING (tenant_id = current_tenant_id())

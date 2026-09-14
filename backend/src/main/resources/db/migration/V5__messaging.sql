@@ -51,6 +51,8 @@ CREATE INDEX idx_telegram_link_client ON telegram_link_token(tenant_id, client_i
 
 ALTER TABLE notification_template ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_template FORCE ROW LEVEL SECURITY;
+CREATE POLICY notification_template_access_gate ON notification_template
+    AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY notification_template_select ON notification_template
     AS RESTRICTIVE FOR SELECT
     USING (tenant_id IS NULL OR tenant_id = current_tenant_id());
@@ -67,6 +69,8 @@ CREATE POLICY notification_template_delete ON notification_template
 
 ALTER TABLE notification_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_log FORCE ROW LEVEL SECURITY;
+CREATE POLICY notification_log_access_gate ON notification_log
+    AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY notification_log_tenant_isolation ON notification_log
     AS RESTRICTIVE
     USING (tenant_id = current_tenant_id())
@@ -74,6 +78,8 @@ CREATE POLICY notification_log_tenant_isolation ON notification_log
 
 ALTER TABLE telegram_link_token ENABLE ROW LEVEL SECURITY;
 ALTER TABLE telegram_link_token FORCE ROW LEVEL SECURITY;
+CREATE POLICY telegram_link_token_access_gate ON telegram_link_token
+    AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY telegram_link_token_tenant_isolation ON telegram_link_token
     AS RESTRICTIVE
     USING (tenant_id = current_tenant_id())

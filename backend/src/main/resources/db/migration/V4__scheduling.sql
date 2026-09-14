@@ -31,6 +31,8 @@ WHERE (status NOT IN ('CANCELLED', 'NO_SHOW'));
 
 ALTER TABLE appointment ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointment FORCE ROW LEVEL SECURITY;
+CREATE POLICY appointment_access_gate ON appointment
+    AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY appointment_tenant_isolation ON appointment
     AS RESTRICTIVE
     USING (tenant_id = current_tenant_id())

@@ -48,7 +48,10 @@ BEGIN
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
         EXECUTE format(
-            'CREATE POLICY %I_tenant_isolation ON %I AS RESTRICTIVE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id())',
-            table_name, table_name);
+            'CREATE POLICY %I ON %I AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true)',
+            table_name || '_access_gate', table_name);
+        EXECUTE format(
+            'CREATE POLICY %I ON %I AS RESTRICTIVE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id())',
+            table_name || '_tenant_isolation', table_name);
     END LOOP;
 END $$;
