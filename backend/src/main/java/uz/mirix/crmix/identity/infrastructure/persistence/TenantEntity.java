@@ -37,6 +37,9 @@ public class TenantEntity {
     @Column(name = "trial_ends_at")
     private Instant trialEndsAt;
 
+    @Column(name = "time_zone", nullable = false)
+    private String timeZone;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -57,6 +60,7 @@ public class TenantEntity {
         tenant.subscriptionPlan = plan;
         tenant.subscriptionStatus = SubscriptionStatus.TRIAL.name();
         tenant.trialEndsAt = now.plusSeconds(14L * 24 * 60 * 60);
+        tenant.timeZone = "Asia/Tashkent";
         tenant.createdAt = now;
         tenant.updatedAt = now;
         return tenant;
@@ -68,6 +72,7 @@ public class TenantEntity {
     public SubscriptionPlanEntity getSubscriptionPlan() { return subscriptionPlan; }
     public SubscriptionStatus getSubscriptionStatus() { return SubscriptionStatus.valueOf(subscriptionStatus); }
     public Instant getTrialEndsAt() { return trialEndsAt; }
+    public String getTimeZone() { return timeZone; }
 
     public void activate(SubscriptionPlanEntity plan, Instant now) {
         this.subscriptionPlan = plan;
