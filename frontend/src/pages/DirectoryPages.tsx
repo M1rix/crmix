@@ -13,7 +13,7 @@ type Service = { id: string; name: string; durationMinutes: number; price: numbe
 
 const clientSchema = z.object({ fullName: z.string().min(2), phone: z.string().min(7), notes: z.string().max(4000).optional() })
 const employeeSchema = z.object({ fullName: z.string().min(2), specialization: z.string().max(160).optional() })
-const serviceSchema = z.object({ name: z.string().min(2), durationMinutes: z.coerce.number().min(5).max(1440), price: z.coerce.number().min(0) })
+const serviceSchema = z.object({ name: z.string().min(2), durationMinutes: z.number().min(5).max(1440), price: z.number().min(0) })
 
 export function ClientsPage() {
   const [query, setQuery] = useState('')
@@ -57,7 +57,7 @@ export function ServicesPage() {
   return <>
     <PageHeader title="Services" description="Duration and price are snapshotted when an appointment is created." />
     <div className="mb-5 flex justify-end"><button className={buttonClass} onClick={() => setShowForm((v) => !v)}><Plus className="mr-2 inline" size={16}/>Add service</button></div>
-    {showForm && <form className={`${cardClass} mb-5 grid gap-3 md:grid-cols-4`} onSubmit={form.handleSubmit((v) => create.mutate(v))}><input className={inputClass} placeholder="Service name" {...form.register('name')} /><input className={inputClass} type="number" {...form.register('durationMinutes')} /><input className={inputClass} type="number" step="0.01" {...form.register('price')} /><button className={buttonClass}>Save</button></form>}
+    {showForm && <form className={`${cardClass} mb-5 grid gap-3 md:grid-cols-4`} onSubmit={form.handleSubmit((v) => create.mutate(v))}><input className={inputClass} placeholder="Service name" {...form.register('name')} /><input className={inputClass} type="number" {...form.register('durationMinutes', { valueAsNumber: true })} /><input className={inputClass} type="number" step="0.01" {...form.register('price', { valueAsNumber: true })} /><button className={buttonClass}>Save</button></form>}
     <Table headers={['Service', 'Duration', 'Price', 'Status']} rows={(list.data?.content ?? []).map((row) => [row.name, `${row.durationMinutes} min`, new Intl.NumberFormat().format(row.price), row.active ? 'Active' : 'Inactive'])} />
   </>
 }
