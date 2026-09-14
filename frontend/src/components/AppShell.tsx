@@ -1,6 +1,6 @@
 import { BarChart3, CalendarDays, ContactRound, LogOut, Scissors, UsersRound } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../auth/AuthProvider'
+import { useAuth } from '../auth/useAuth'
 
 const links = [
   { to: '/', label: 'Overview', icon: BarChart3 },

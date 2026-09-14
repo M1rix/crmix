@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { AuthProvider, useAuth } from './auth/AuthProvider'
+import { AuthProvider } from './auth/AuthProvider'
+import { useAuth } from './auth/useAuth'
 import { AppShell } from './components/AppShell'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
 import { AppointmentsPage } from './pages/AppointmentsPage'

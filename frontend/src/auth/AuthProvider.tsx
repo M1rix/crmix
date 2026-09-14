@@ -1,25 +1,6 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { api, loadAuth, saveAuth, type AuthTokens } from '../lib/api'
-
-type LoginInput = { tenantSlug: string; email: string; password: string }
-type RegisterInput = {
-  slug: string
-  businessName: string
-  businessType: string
-  ownerFullName: string
-  email: string
-  password: string
-  phone?: string
-}
-
-type AuthContextValue = {
-  auth: AuthTokens | null
-  login: (input: LoginInput) => Promise<void>
-  register: (input: RegisterInput) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
+import { AuthContext, type AuthContextValue } from './AuthContext'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthTokens | null>(() => loadAuth())
@@ -47,10 +28,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [auth],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used inside AuthProvider')
-  return context
 }

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import { useAuth } from '../auth/AuthProvider'
+import { useAuth } from '../auth/useAuth'
 import { buttonClass, inputClass } from '../components/AppShell'
 
 const loginSchema = z.object({ tenantSlug: z.string().min(3), email: z.email(), password: z.string().min(10) })
