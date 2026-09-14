@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+if command -v gradle >/dev/null 2>&1; then
+  (cd backend && gradle --quiet spotlessCheck)
+else
+  echo "gradle not installed; backend formatting will be enforced by CI"
+fi
+
+if [ -d frontend/node_modules ]; then
+  (cd frontend && npm run lint -- --quiet && npm run format:check)
+else
+  echo "frontend/node_modules missing; frontend checks will be enforced by CI"
+fi
