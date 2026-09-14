@@ -11,4 +11,5 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     List<NotificationLogEntity> findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByNextAttemptAtAsc(
             UUID tenantId, Collection<String> statuses, Instant now, Pageable pageable);
     List<NotificationLogEntity> findByTenantIdAndAppointmentIdOrderByScheduledForAsc(UUID tenantId, UUID appointmentId);
+    List<NotificationLogEntity> findTop100ByTenantIdOrderByScheduledForDesc(UUID tenantId);
 }

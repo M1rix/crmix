@@ -3,13 +3,13 @@ package uz.mirix.crmix.messaging.api;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.transaction.annotation.Transactional;
 import uz.mirix.crmix.messaging.application.TelegramLinkService;
 import uz.mirix.crmix.messaging.domain.NotificationStatus;
 import uz.mirix.crmix.messaging.infrastructure.persistence.NotificationLogEntity;
@@ -40,17 +40,18 @@ public class MessagingController {
 
     @GetMapping("/notifications")
     @Transactional(readOnly = true)
-    List<NotificationView> notifications(@RequestParam UUID appointmentId) {
+    List<NotificationView> notifications(@RequestParam(required = false) UUID appointmentId) {
         var tenantId = tenantContext.requireTenantId();
         rlsTenantScope.apply(tenantId);
-        return logRepository.findByTenantIdAndAppointmentIdOrderByScheduledForAsc(tenantId, appointmentId).stream()
-                .map(NotificationView::from)
-                .toList();
+        var entries = appointmentId == null
+                ? logRepository.findTop100ByTenantIdOrderByScheduledForDesc(tenantId)
+                : logRepository.findByTenantIdAndAppointmentIdOrderByScheduledForAsc(tenantId, appointmentId);
+        return entries.stream().map(NotificationView::from).toList();
     }
 
-    public record NotificationView(UUID id, String templateCode, NotificationStatus status, java.time.Instant scheduledFor, int attempts, java.time.Instant sentAt, String error) {
+    public record NotificationView(UUID id, UUID clientId, UUID appointmentId, String templateCode, NotificationStatus status, java.time.Instant scheduledFor, int attempts, java.time.Instant sentAt, String error) {
         static NotificationView from(NotificationLogEntity entity) {
-            return new NotificationView(entity.getId(), entity.getTemplateCode(), entity.getStatus(), entity.getScheduledFor(), entity.getAttemptCount(), entity.getSentAt(), entity.getErrorMessage());
+            return new NotificationView(entity.getId(), entity.getClientId(), entity.getAppointmentId(), entity.getTemplateCode(), entity.getStatus(), entity.getScheduledFor(), entity.getAttemptCount(), entity.getSentAt(), entity.getErrorMessage());
         }
     }
 }

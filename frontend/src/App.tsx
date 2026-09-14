@@ -5,6 +5,7 @@ import { AppShell } from './components/AppShell'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
 import { AppointmentsPage } from './pages/AppointmentsPage'
 import { ClientsPage, EmployeesPage, ServicesPage } from './pages/DirectoryPages'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { OverviewPage } from './pages/OverviewPage'
 
 function ProtectedShell() {
@@ -13,5 +14,5 @@ function ProtectedShell() {
 }
 
 export default function App() {
-  return <AuthProvider><Routes><Route path="/login" element={<LoginPage />} /><Route path="/register" element={<RegisterPage />} /><Route element={<ProtectedShell />}><Route index element={<OverviewPage />} /><Route path="clients" element={<ClientsPage />} /><Route path="employees" element={<EmployeesPage />} /><Route path="services" element={<ServicesPage />} /><Route path="appointments" element={<AppointmentsPage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></AuthProvider>
+  return <AuthProvider><Routes><Route path="/login" element={<LoginPage />} /><Route path="/register" element={<RegisterPage />} /><Route element={<ProtectedShell />}><Route index element={<OverviewPage />} /><Route path="clients" element={<ClientsPage />} /><Route path="employees" element={<EmployeesPage />} /><Route path="services" element={<ServicesPage />} /><Route path="appointments" element={<AppointmentsPage />} /><Route path="notifications" element={<NotificationsPage />} /></Route><Route path="*" element={<Navigate to="/" replace />} /></Routes></AuthProvider>
 }
