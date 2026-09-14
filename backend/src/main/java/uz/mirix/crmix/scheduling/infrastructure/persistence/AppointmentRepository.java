@@ -32,7 +32,7 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
                 and employee_id = :employeeId
                 and status not in ('CANCELLED','NO_SHOW')
                 and scheduled_at < :endAt
-                and scheduled_at + duration_minutes * interval '1 minute' > :startAt
+                and scheduled_end_at > :startAt
             )
             """, nativeQuery = true)
     boolean existsOverlap(
@@ -49,7 +49,7 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
                 and id <> :appointmentId
                 and status not in ('CANCELLED','NO_SHOW')
                 and scheduled_at < :endAt
-                and scheduled_at + duration_minutes * interval '1 minute' > :startAt
+                and scheduled_end_at > :startAt
             )
             """, nativeQuery = true)
     boolean existsOverlapExcluding(

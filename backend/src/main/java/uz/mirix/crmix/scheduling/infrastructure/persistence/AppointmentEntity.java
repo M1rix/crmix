@@ -30,6 +30,9 @@ public class AppointmentEntity {
     @Column(name = "scheduled_at", nullable = false)
     private Instant scheduledAt;
 
+    @Column(name = "scheduled_end_at", nullable = false)
+    private Instant scheduledEndAt;
+
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes;
 
@@ -50,7 +53,14 @@ public class AppointmentEntity {
 
     protected AppointmentEntity() {}
 
-    public static AppointmentEntity create(UUID tenantId, UUID clientId, UUID employeeId, UUID serviceId, Instant scheduledAt, int durationMinutes, Instant now) {
+    public static AppointmentEntity create(
+            UUID tenantId,
+            UUID clientId,
+            UUID employeeId,
+            UUID serviceId,
+            Instant scheduledAt,
+            int durationMinutes,
+            Instant now) {
         var entity = new AppointmentEntity();
         entity.id = UUID.randomUUID();
         entity.tenantId = tenantId;
@@ -58,6 +68,7 @@ public class AppointmentEntity {
         entity.employeeId = employeeId;
         entity.serviceId = serviceId;
         entity.scheduledAt = scheduledAt;
+        entity.scheduledEndAt = scheduledAt.plusSeconds(durationMinutes * 60L);
         entity.durationMinutes = durationMinutes;
         entity.status = AppointmentStatus.SCHEDULED.name();
         entity.createdAt = now;
@@ -73,6 +84,7 @@ public class AppointmentEntity {
 
     public void reschedule(Instant scheduledAt, Instant now) {
         this.scheduledAt = scheduledAt;
+        this.scheduledEndAt = scheduledAt.plusSeconds(durationMinutes * 60L);
         this.updatedAt = now;
     }
 
@@ -82,6 +94,7 @@ public class AppointmentEntity {
     public UUID getEmployeeId() { return employeeId; }
     public UUID getServiceId() { return serviceId; }
     public Instant getScheduledAt() { return scheduledAt; }
+    public Instant getScheduledEndAt() { return scheduledEndAt; }
     public int getDurationMinutes() { return durationMinutes; }
     public AppointmentStatus getStatus() { return AppointmentStatus.valueOf(status); }
     public String getCancellationReason() { return cancellationReason; }

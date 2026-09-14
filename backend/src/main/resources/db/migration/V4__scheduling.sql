@@ -7,12 +7,14 @@ CREATE TABLE appointment (
     employee_id UUID NOT NULL REFERENCES employee(id),
     service_id UUID NOT NULL REFERENCES service(id),
     scheduled_at TIMESTAMPTZ NOT NULL,
+    scheduled_end_at TIMESTAMPTZ NOT NULL,
     duration_minutes INTEGER NOT NULL CHECK (duration_minutes BETWEEN 5 AND 1440),
     status VARCHAR(30) NOT NULL,
     cancellation_reason VARCHAR(1000),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    version BIGINT NOT NULL DEFAULT 0
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT appointment_positive_range CHECK (scheduled_end_at > scheduled_at)
 );
 
 CREATE INDEX idx_appointment_employee_time ON appointment(tenant_id, employee_id, scheduled_at);
@@ -23,7 +25,7 @@ ALTER TABLE appointment ADD CONSTRAINT no_appointment_overlap
 EXCLUDE USING gist (
     tenant_id WITH =,
     employee_id WITH =,
-    tstzrange(scheduled_at, scheduled_at + duration_minutes * interval '1 minute', '[)') WITH &&
+    tstzrange(scheduled_at, scheduled_end_at, '[)') WITH &&
 )
 WHERE (status NOT IN ('CANCELLED', 'NO_SHOW'));
 

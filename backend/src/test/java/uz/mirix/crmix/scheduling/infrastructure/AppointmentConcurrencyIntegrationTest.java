@@ -71,8 +71,9 @@ class AppointmentConcurrencyIntegrationTest {
         try (var connection = DriverManager.getConnection(POSTGRES.getJdbcUrl(), "crmix_scheduler", "scheduler-password");
                 var statement = connection.createStatement()) {
             statement.execute("SELECT set_config('app.tenant_id', '" + TENANT_ID + "', false)");
-            statement.execute("INSERT INTO appointment(id, tenant_id, client_id, employee_id, service_id, scheduled_at, duration_minutes, status) VALUES (gen_random_uuid(),'"
-                    + TENANT_ID + "','" + CLIENT_ID + "','" + EMPLOYEE_ID + "','" + SERVICE_ID + "','" + slot + "',60,'SCHEDULED')");
+            var end = slot.plusSeconds(3600);
+            statement.execute("INSERT INTO appointment(id, tenant_id, client_id, employee_id, service_id, scheduled_at, scheduled_end_at, duration_minutes, status) VALUES (gen_random_uuid(),'"
+                    + TENANT_ID + "','" + CLIENT_ID + "','" + EMPLOYEE_ID + "','" + SERVICE_ID + "','" + slot + "','" + end + "',60,'SCHEDULED')");
             return true;
         } catch (java.sql.SQLException expectedConflict) {
             return false;
