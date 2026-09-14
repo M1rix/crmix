@@ -34,9 +34,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain securityFilterChain(
-            HttpSecurity http, TenantContextFilter tenantContextFilter, JwtAuthenticationConverter jwtAuthenticationConverter)
-            throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, TenantContextFilter tenantContextFilter, SubscriptionAccessFilter subscriptionAccessFilter, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -44,6 +42,7 @@ public class SecurityConfig {
                                 "/api/v1/tenants/register",
                                 "/api/v1/auth/**",
                                 "/api/v1/integrations/telegram/webhook",
+                                "/api/v1/webhooks/payme",
                                 "/actuator/health",
                                 "/actuator/info")
                         .permitAll()
@@ -52,35 +51,22 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-                .addFilterAfter(tenantContextFilter, BearerTokenAuthenticationFilter.class);
+                .addFilterAfter(tenantContextFilter, BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(subscriptionAccessFilter, TenantContextFilter.class);
         return http.build();
     }
 
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
+    @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
 
-    @Bean
-    SecretKey jwtSecretKey(@Value("${security.jwt.secret:${JWT_SECRET:change-me-local-only-change-me-local-only}}") String secret) {
-        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            throw new IllegalStateException("JWT secret must contain at least 32 bytes");
-        }
+    @Bean SecretKey jwtSecretKey(@Value("${security.jwt.secret:${JWT_SECRET:change-me-local-only-change-me-local-only}}") String secret) {
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) throw new IllegalStateException("JWT secret must contain at least 32 bytes");
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
-    @Bean
-    JwtEncoder jwtEncoder(SecretKey secretKey) {
-        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
-    }
+    @Bean JwtEncoder jwtEncoder(SecretKey secretKey) { return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey)); }
+    @Bean JwtDecoder jwtDecoder(SecretKey secretKey) { return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MacAlgorithm.HS256).build(); }
 
-    @Bean
-    JwtDecoder jwtDecoder(SecretKey secretKey) {
-        return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MacAlgorithm.HS256).build();
-    }
-
-    @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter() {
+    @Bean JwtAuthenticationConverter jwtAuthenticationConverter() {
         var converter = new JwtAuthenticationConverter();
         Converter<Jwt, Collection<GrantedAuthority>> authoritiesConverter = jwt -> {
             var role = jwt.getClaimAsString("role");
@@ -90,9 +76,7 @@ public class SecurityConfig {
         return converter;
     }
 
-    @Bean
-    CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origins:${APP_CORS_ALLOWED_ORIGINS:http://localhost:8088}}") String allowedOrigins) {
+    @Bean CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origins:${APP_CORS_ALLOWED_ORIGINS:http://localhost:8088}}") String allowedOrigins) {
         var config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

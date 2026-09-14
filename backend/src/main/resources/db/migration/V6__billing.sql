@@ -10,6 +10,7 @@ CREATE TABLE payment (
     currency CHAR(3) NOT NULL DEFAULT 'UZS',
     provider VARCHAR(30) NOT NULL,
     provider_transaction_id VARCHAR(128),
+    provider_state INTEGER,
     idempotency_key VARCHAR(128) NOT NULL,
     status VARCHAR(30) NOT NULL,
     provider_created_at TIMESTAMPTZ,
@@ -26,8 +27,6 @@ CREATE UNIQUE INDEX uq_payment_provider_transaction
     WHERE provider_transaction_id IS NOT NULL;
 CREATE INDEX idx_payment_tenant_created ON payment(tenant_id, created_at DESC);
 
--- RLS-free provider lookup contains no customer/payment amount data and is only used
--- to recover tenant context for provider callbacks that carry only provider transaction id.
 CREATE TABLE payment_provider_transaction (
     provider VARCHAR(30) NOT NULL,
     provider_transaction_id VARCHAR(128) NOT NULL,
