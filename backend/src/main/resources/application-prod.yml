@@ -1,0 +1,12 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+management:
+  endpoint:
+    health:
+      show-details: never

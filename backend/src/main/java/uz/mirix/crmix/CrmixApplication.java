@@ -1,0 +1,13 @@
+package uz.mirix.crmix;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@EnableScheduling
+@SpringBootApplication
+public class CrmixApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(CrmixApplication.class, args);
+    }
+}

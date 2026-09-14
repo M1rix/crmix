@@ -1,0 +1,8 @@
+spring:
+  config:
+    activate:
+      on-profile: staging
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
