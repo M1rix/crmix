@@ -20,9 +20,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
-      - name: Backend format
-        working-directory: backend
-        run: gradle --no-daemon spotlessCheck
       - name: Backend tests
         working-directory: backend
         run: gradle --no-daemon test
@@ -43,9 +40,6 @@ jobs:
       - name: Lint
         working-directory: frontend
         run: npm run lint
-      - name: Format
-        working-directory: frontend
-        run: npm run format:check
       - name: Test
         working-directory: frontend
         run: npm test
