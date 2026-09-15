@@ -36,16 +36,38 @@ public class PaymentEntity {
     protected PaymentEntity() {}
 
     public static PaymentEntity subscription(UUID tenantId, UUID planId, BigDecimal amount, String idempotencyKey, Instant now) {
+        var entity = base(tenantId, amount, idempotencyKey, now);
+        entity.subscriptionPlanId = planId;
+        entity.type = "SUBSCRIPTION";
+        entity.provider = "PAYME";
+        entity.status = PaymentStatus.PENDING.name();
+        return entity;
+    }
+
+    public static PaymentEntity appointment(
+            UUID tenantId,
+            UUID appointmentId,
+            BigDecimal amount,
+            String paymentMethod,
+            String idempotencyKey,
+            Instant now) {
+        var entity = base(tenantId, amount, idempotencyKey, now);
+        entity.appointmentId = appointmentId;
+        entity.type = "APPOINTMENT";
+        entity.provider = paymentMethod;
+        entity.status = PaymentStatus.SUCCEEDED.name();
+        entity.providerState = 2;
+        entity.providerPerformedAt = now;
+        return entity;
+    }
+
+    private static PaymentEntity base(UUID tenantId, BigDecimal amount, String idempotencyKey, Instant now) {
         var entity = new PaymentEntity();
         entity.id = UUID.randomUUID();
         entity.tenantId = tenantId;
-        entity.subscriptionPlanId = planId;
-        entity.type = "SUBSCRIPTION";
         entity.amount = amount;
         entity.currency = "UZS";
-        entity.provider = "PAYME";
         entity.idempotencyKey = idempotencyKey;
-        entity.status = PaymentStatus.PENDING.name();
         entity.createdAt = now;
         entity.updatedAt = now;
         return entity;
@@ -79,9 +101,12 @@ public class PaymentEntity {
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
+    public UUID getAppointmentId() { return appointmentId; }
     public UUID getSubscriptionPlanId() { return subscriptionPlanId; }
+    public String getType() { return type; }
     public BigDecimal getAmount() { return amount; }
     public String getCurrency() { return currency; }
+    public String getProvider() { return provider; }
     public String getProviderTransactionId() { return providerTransactionId; }
     public Integer getProviderState() { return providerState; }
     public PaymentStatus getStatus() { return PaymentStatus.valueOf(status); }

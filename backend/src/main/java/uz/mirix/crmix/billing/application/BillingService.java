@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
@@ -23,6 +24,8 @@ import uz.mirix.crmix.platform.tenancy.TenantContext;
 
 @Service
 public class BillingService {
+    private static final Set<String> APPOINTMENT_PAYMENT_METHODS = Set.of("CASH", "CARD", "BANK_TRANSFER");
+
     private final TenantContext tenantContext;
     private final RlsTenantScope rlsTenantScope;
     private final PaymentRepository paymentRepository;
@@ -48,22 +51,56 @@ public class BillingService {
     @Transactional
     public PaymentView createSubscriptionPayment(String planCode, String idempotencyKey) {
         var tenantId = applyTenant();
-        if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-idempotency-key", "Invalid Idempotency-Key", "Provide a non-empty Idempotency-Key up to 128 characters");
-        }
+        validateIdempotencyKey(idempotencyKey);
         var existing = paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey);
-        if (existing.isPresent()) return paymentView(existing.get());
+        if (existing.isPresent()) {
+            var payment = existing.get();
+            if (!"SUBSCRIPTION".equals(payment.getType())) throw idempotencyConflict();
+            return paymentView(payment);
+        }
         var plan = requirePlan(planCode);
         if (plan.getPriceMonthly().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "plan-not-payable", "Plan cannot be purchased", "Select a paid plan");
         }
         try {
-            var payment = paymentRepository.saveAndFlush(PaymentEntity.subscription(tenantId, plan.getId(), plan.getPriceMonthly(), idempotencyKey, Instant.now()));
-            return paymentView(payment);
+            return paymentView(paymentRepository.saveAndFlush(
+                    PaymentEntity.subscription(tenantId, plan.getId(), plan.getPriceMonthly(), idempotencyKey, Instant.now())));
         } catch (DataIntegrityViolationException conflict) {
             return paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
+                    .filter(payment -> "SUBSCRIPTION".equals(payment.getType()))
                     .map(this::paymentView)
                     .orElseThrow(() -> conflict);
+        }
+    }
+
+    @Transactional
+    public PaymentView recordAppointmentPayment(
+            UUID appointmentId, BigDecimal amount, String paymentMethod, String idempotencyKey) {
+        var tenantId = applyTenant();
+        validateIdempotencyKey(idempotencyKey);
+        if (appointmentId == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "appointment-required", "Appointment required", "Provide appointmentId");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-amount", "Invalid amount", "Payment amount must be positive");
+        }
+        var method = paymentMethod == null ? "" : paymentMethod.trim().toUpperCase();
+        if (!APPOINTMENT_PAYMENT_METHODS.contains(method)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-payment-method", "Invalid payment method", "Use CASH, CARD or BANK_TRANSFER");
+        }
+        var existing = paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey);
+        if (existing.isPresent()) {
+            var payment = existing.get();
+            if (!"APPOINTMENT".equals(payment.getType()) || !appointmentId.equals(payment.getAppointmentId())) throw idempotencyConflict();
+            return paymentView(payment);
+        }
+        try {
+            return paymentView(paymentRepository.saveAndFlush(
+                    PaymentEntity.appointment(tenantId, appointmentId, amount, method, idempotencyKey, Instant.now())));
+        } catch (DataIntegrityViolationException conflict) {
+            var raced = paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey);
+            if (raced.isPresent()) return paymentView(raced.get());
+            throw new ApiException(HttpStatus.CONFLICT, "appointment-payment-conflict", "Appointment payment conflict", "Appointment does not exist in this workspace or payment could not be recorded");
         }
     }
 
@@ -124,12 +161,23 @@ public class BillingService {
     }
 
     private PaymentView paymentView(PaymentEntity entity) {
-        var checkoutUrl = entity.getStatus() == uz.mirix.crmix.billing.domain.PaymentStatus.PENDING
+        var checkoutUrl = "SUBSCRIPTION".equals(entity.getType()) && entity.getStatus() == uz.mirix.crmix.billing.domain.PaymentStatus.PENDING
                 ? checkoutLinkFactory.create(entity.getTenantId(), entity.getId(), entity.getAmount())
                 : null;
         return new PaymentView(
-                entity.getId(), entity.getTenantId(), entity.getSubscriptionPlanId(), entity.getAmount(), entity.getCurrency(),
-                "PAYME", entity.getStatus().name(), entity.getProviderTransactionId(), checkoutUrl, entity.getCreatedAt());
+                entity.getId(), entity.getTenantId(), entity.getAppointmentId(), entity.getSubscriptionPlanId(), entity.getType(),
+                entity.getAmount(), entity.getCurrency(), entity.getProvider(), entity.getStatus().name(),
+                entity.getProviderTransactionId(), checkoutUrl, entity.getCreatedAt());
+    }
+
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-idempotency-key", "Invalid Idempotency-Key", "Provide a non-empty Idempotency-Key up to 128 characters");
+        }
+    }
+
+    private static ApiException idempotencyConflict() {
+        return new ApiException(HttpStatus.CONFLICT, "idempotency-key-reused", "Idempotency-Key already used", "Use a new Idempotency-Key for a different operation");
     }
 
     private UUID applyTenant() {
@@ -146,7 +194,9 @@ public class BillingService {
     public record PaymentView(
             UUID id,
             UUID tenantId,
+            UUID appointmentId,
             UUID planId,
+            String type,
             BigDecimal amount,
             String currency,
             String provider,

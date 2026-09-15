@@ -1,8 +1,13 @@
 package uz.mirix.crmix.billing.api;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +39,14 @@ public class BillingController {
         return billingService.createSubscriptionPayment(request.planCode(), idempotencyKey);
     }
 
+    @PostMapping("/appointment-payments")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','STAFF')")
+    PaymentView recordAppointmentPayment(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody AppointmentPaymentRequest request) {
+        return billingService.recordAppointmentPayment(request.appointmentId(), request.amount(), request.paymentMethod(), idempotencyKey);
+    }
+
     @GetMapping("/payments")
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     List<PaymentView> list() { return billingService.payments(); }
@@ -46,4 +59,8 @@ public class BillingController {
 
     public record CreatePaymentRequest(@NotBlank String planCode) {}
     public record PlanChangeRequest(@NotBlank String planCode) {}
+    public record AppointmentPaymentRequest(
+            @NotNull UUID appointmentId,
+            @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
+            @NotBlank @Pattern(regexp = "CASH|CARD|BANK_TRANSFER") String paymentMethod) {}
 }
