@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
     java
     id("org.springframework.boot") version "3.5.5"
@@ -35,7 +38,16 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 }
 
-tasks.withType<Test> { useJUnitPlatform() }
+tasks.withType<Test> {
+    useJUnitPlatform()
+    testLogging {
+        events = setOf(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
+        exceptionFormat = TestExceptionFormat.FULL
+        showCauses = true
+        showExceptions = true
+        showStackTraces = true
+    }
+}
 
 spotless {
     java {
