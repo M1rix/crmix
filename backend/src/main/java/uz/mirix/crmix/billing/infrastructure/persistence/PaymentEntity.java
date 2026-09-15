@@ -19,7 +19,7 @@ public class PaymentEntity {
     @Column(name = "subscription_plan_id") private UUID subscriptionPlanId;
     @Column(nullable = false) private String type;
     @Column(nullable = false) private BigDecimal amount;
-    @Column(nullable = false) private String currency;
+    @Column(nullable = false, length = 3, columnDefinition = "char(3)") private String currency;
     @Column(nullable = false) private String provider;
     @Column(name = "provider_transaction_id") private String providerTransactionId;
     @Column(name = "provider_state") private Integer providerState;
