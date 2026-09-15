@@ -1,0 +1,54 @@
+name: Pilot feedback
+about: Evidence-backed CRMIX pilot observation for v2 triage
+title: "[PILOT] "
+labels: []
+body:
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow
+      options:
+        - Identity / access
+        - Directory
+        - Scheduling
+        - Telegram / messaging
+        - Appointment payments
+        - CRMIX billing
+        - Analytics
+        - Performance / reliability
+        - UX / other
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [P0, P1, P2, P3]
+    validations:
+      required: true
+  - type: textarea
+    id: observation
+    attributes:
+      label: Observed problem
+      description: Describe what the pilot user tried to accomplish and what actually happened. Do not include personal customer data.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction / evidence
+      description: Steps, sanitized trace/correlation ID, frequency and affected role(s).
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Business impact
+      description: Time lost, blocked revenue/workflow, error risk or user confusion.
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: Desired outcome
+      description: State the outcome rather than prescribing an implementation.
