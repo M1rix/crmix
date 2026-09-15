@@ -47,3 +47,26 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Nginx configuration
+        run: >-
+          docker run --rm
+          -v "$PWD/infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+          nginx:1.27-alpine nginx -t
+      - name: Validate production Compose model
+        env:
+          GRAFANA_ADMIN_PASSWORD: ci-only-password
+          POSTGRES_ADMIN_PASSWORD: ci-only-postgres-password
+          DB_PASSWORD: ci-only-app-password
+          JWT_SECRET: ci-only-jwt-secret-with-at-least-32-bytes
+          BACKUP_S3_URI: s3://ci-placeholder/crmix
+        run: >-
+          docker compose
+          -f docker-compose.yml
+          -f docker-compose.prod.yml
+          -f docker-compose.monitoring.yml
+          config --quiet
