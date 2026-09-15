@@ -28,13 +28,21 @@ public class BillingService {
     private final PaymentRepository paymentRepository;
     private final SubscriptionPlanRepository planRepository;
     private final TenantRepository tenantRepository;
+    private final PaymeCheckoutLinkFactory checkoutLinkFactory;
 
-    public BillingService(TenantContext tenantContext, RlsTenantScope rlsTenantScope, PaymentRepository paymentRepository, SubscriptionPlanRepository planRepository, TenantRepository tenantRepository) {
+    public BillingService(
+            TenantContext tenantContext,
+            RlsTenantScope rlsTenantScope,
+            PaymentRepository paymentRepository,
+            SubscriptionPlanRepository planRepository,
+            TenantRepository tenantRepository,
+            PaymeCheckoutLinkFactory checkoutLinkFactory) {
         this.tenantContext = tenantContext;
         this.rlsTenantScope = rlsTenantScope;
         this.paymentRepository = paymentRepository;
         this.planRepository = planRepository;
         this.tenantRepository = tenantRepository;
+        this.checkoutLinkFactory = checkoutLinkFactory;
     }
 
     @Transactional
@@ -44,17 +52,17 @@ public class BillingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-idempotency-key", "Invalid Idempotency-Key", "Provide a non-empty Idempotency-Key up to 128 characters");
         }
         var existing = paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey);
-        if (existing.isPresent()) return PaymentView.from(existing.get());
+        if (existing.isPresent()) return paymentView(existing.get());
         var plan = requirePlan(planCode);
         if (plan.getPriceMonthly().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "plan-not-payable", "Plan cannot be purchased", "Select a paid plan");
         }
         try {
             var payment = paymentRepository.saveAndFlush(PaymentEntity.subscription(tenantId, plan.getId(), plan.getPriceMonthly(), idempotencyKey, Instant.now()));
-            return PaymentView.from(payment);
+            return paymentView(payment);
         } catch (DataIntegrityViolationException conflict) {
             return paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
-                    .map(PaymentView::from)
+                    .map(this::paymentView)
                     .orElseThrow(() -> conflict);
         }
     }
@@ -62,7 +70,9 @@ public class BillingService {
     @Transactional(readOnly = true)
     public List<PaymentView> payments() {
         var tenantId = applyTenant();
-        return paymentRepository.findAllByTenantId(tenantId, Sort.by(Sort.Direction.DESC, "createdAt")).stream().map(PaymentView::from).toList();
+        return paymentRepository.findAllByTenantId(tenantId, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                .map(this::paymentView)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -113,6 +123,15 @@ public class BillingService {
         });
     }
 
+    private PaymentView paymentView(PaymentEntity entity) {
+        var checkoutUrl = entity.getStatus() == uz.mirix.crmix.billing.domain.PaymentStatus.PENDING
+                ? checkoutLinkFactory.create(entity.getTenantId(), entity.getId(), entity.getAmount())
+                : null;
+        return new PaymentView(
+                entity.getId(), entity.getTenantId(), entity.getSubscriptionPlanId(), entity.getAmount(), entity.getCurrency(),
+                "PAYME", entity.getStatus().name(), entity.getProviderTransactionId(), checkoutUrl, entity.getCreatedAt());
+    }
+
     private UUID applyTenant() {
         var tenantId = tenantContext.requireTenantId();
         rlsTenantScope.apply(tenantId);
@@ -124,11 +143,17 @@ public class BillingService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "plan-not-found", "Plan not found", "Unknown subscription plan"));
     }
 
-    public record PaymentView(UUID id, UUID tenantId, UUID planId, BigDecimal amount, String currency, String provider, String status, String providerTransactionId, Instant createdAt) {
-        static PaymentView from(PaymentEntity entity) {
-            return new PaymentView(entity.getId(), entity.getTenantId(), entity.getSubscriptionPlanId(), entity.getAmount(), entity.getCurrency(), "PAYME", entity.getStatus().name(), entity.getProviderTransactionId(), entity.getCreatedAt());
-        }
-    }
+    public record PaymentView(
+            UUID id,
+            UUID tenantId,
+            UUID planId,
+            BigDecimal amount,
+            String currency,
+            String provider,
+            String status,
+            String providerTransactionId,
+            String checkoutUrl,
+            Instant createdAt) {}
 
     public record PlanView(UUID id, String code, String name, BigDecimal priceMonthly, int maxEmployees, java.util.Map<String, Object> features) {
         static PlanView from(SubscriptionPlanEntity plan) {
