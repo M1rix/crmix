@@ -31,6 +31,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.telegram:telegrambots-client:10.3.0")
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")

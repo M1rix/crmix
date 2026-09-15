@@ -37,6 +37,10 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, TenantContextFilter tenantContextFilter, SubscriptionAccessFilter subscriptionAccessFilter, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
+                .headers(headers -> headers
+                        .contentTypeOptions(options -> {})
+                        .frameOptions(frame -> frame.deny())
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
                                 "/api/v1/tenants/register",
@@ -44,9 +48,10 @@ public class SecurityConfig {
                                 "/api/v1/integrations/telegram/webhook",
                                 "/api/v1/webhooks/payme",
                                 "/actuator/health",
-                                "/actuator/info")
+                                "/actuator/info",
+                                "/actuator/prometheus")
                         .permitAll()
-                        .requestMatchers("/actuator/metrics/**", "/actuator/prometheus")
+                        .requestMatchers("/actuator/metrics/**")
                         .hasRole("OWNER")
                         .anyRequest()
                         .authenticated())
