@@ -1,4 +1,4 @@
-import { BarChart3, BellRing, CalendarDays, ContactRound, LogOut, Scissors, UsersRound } from 'lucide-react'
+import { BarChart3, BellRing, CalendarDays, ContactRound, CreditCard, LogOut, Scissors, UsersRound } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 
@@ -9,6 +9,7 @@ const links = [
   { to: '/services', label: 'Services', icon: Scissors },
   { to: '/appointments', label: 'Appointments', icon: CalendarDays },
   { to: '/notifications', label: 'Notifications', icon: BellRing },
+  { to: '/billing', label: 'Billing', icon: CreditCard },
 ]
 
 export function AppShell() {
