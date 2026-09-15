@@ -1,7 +1,6 @@
 package uz.mirix.crmix.analytics.application;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -63,10 +62,10 @@ public class AnalyticsService {
                 FROM payment
                 WHERE tenant_id = ? AND type = 'APPOINTMENT' AND status = 'SUCCEEDED'
                   AND created_at >= ? AND created_at < ?
-                GROUP BY DATE(timezone(?, created_at))
+                GROUP BY 1
                 ORDER BY day
                 """, (rs, rowNum) -> new DailyRevenue(rs.getDate("day").toLocalDate(), rs.getBigDecimal("revenue")),
-                zone.getId(), tenantId, fromTimestamp, toExclusiveTimestamp, zone.getId());
+                zone.getId(), tenantId, fromTimestamp, toExclusiveTimestamp);
 
         var employeeLoad = jdbc.query("""
                 SELECT e.id, e.full_name,
