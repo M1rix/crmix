@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -39,15 +40,15 @@ public class AnalyticsService {
         var tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "tenant-not-found", "Tenant not found", "Workspace does not exist"));
         var zone = ZoneId.of(tenant.getTimeZone());
-        var fromInstant = from.atStartOfDay(zone).toInstant();
-        var toExclusive = to.plusDays(1).atStartOfDay(zone).toInstant();
+        var fromTimestamp = from.atStartOfDay(zone).toInstant().atOffset(ZoneOffset.UTC);
+        var toExclusiveTimestamp = to.plusDays(1).atStartOfDay(zone).toInstant().atOffset(ZoneOffset.UTC);
 
         var revenue = jdbc.queryForObject("""
                 SELECT COALESCE(SUM(amount), 0)
                 FROM payment
                 WHERE tenant_id = ? AND type = 'APPOINTMENT' AND status = 'SUCCEEDED'
                   AND created_at >= ? AND created_at < ?
-                """, BigDecimal.class, tenantId, fromInstant, toExclusive);
+                """, BigDecimal.class, tenantId, fromTimestamp, toExclusiveTimestamp);
 
         var stats = jdbc.queryForObject("""
                 SELECT COUNT(*) AS total,
@@ -55,7 +56,7 @@ public class AnalyticsService {
                        COUNT(*) FILTER (WHERE status = 'NO_SHOW') AS no_show
                 FROM appointment
                 WHERE tenant_id = ? AND scheduled_at >= ? AND scheduled_at < ?
-                """, (rs, rowNum) -> new AppointmentStats(rs.getLong("total"), rs.getLong("cancelled"), rs.getLong("no_show")), tenantId, fromInstant, toExclusive);
+                """, (rs, rowNum) -> new AppointmentStats(rs.getLong("total"), rs.getLong("cancelled"), rs.getLong("no_show")), tenantId, fromTimestamp, toExclusiveTimestamp);
 
         var dailyRevenue = jdbc.query("""
                 SELECT DATE(timezone(?, created_at)) AS day, COALESCE(SUM(amount), 0) AS revenue
@@ -65,7 +66,7 @@ public class AnalyticsService {
                 GROUP BY DATE(timezone(?, created_at))
                 ORDER BY day
                 """, (rs, rowNum) -> new DailyRevenue(rs.getDate("day").toLocalDate(), rs.getBigDecimal("revenue")),
-                zone.getId(), tenantId, fromInstant, toExclusive, zone.getId());
+                zone.getId(), tenantId, fromTimestamp, toExclusiveTimestamp, zone.getId());
 
         var employeeLoad = jdbc.query("""
                 SELECT e.id, e.full_name,
@@ -82,7 +83,7 @@ public class AnalyticsService {
                 ORDER BY booked_minutes DESC, e.full_name
                 """, (rs, rowNum) -> new EmployeeLoad(
                         rs.getObject("id", UUID.class), rs.getString("full_name"), rs.getLong("appointment_count"), rs.getLong("booked_minutes")),
-                fromInstant, toExclusive, tenantId);
+                fromTimestamp, toExclusiveTimestamp, tenantId);
 
         var topServices = jdbc.query("""
                 SELECT s.id, s.name, COUNT(a.id) AS appointment_count
@@ -97,7 +98,7 @@ public class AnalyticsService {
                 ORDER BY appointment_count DESC, s.name
                 LIMIT 10
                 """, (rs, rowNum) -> new TopService(rs.getObject("id", UUID.class), rs.getString("name"), rs.getLong("appointment_count")),
-                fromInstant, toExclusive, tenantId);
+                fromTimestamp, toExclusiveTimestamp, tenantId);
 
         var total = stats == null ? 0 : stats.total();
         var cancelled = stats == null ? 0 : stats.cancelled();
