@@ -24,6 +24,12 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+billing:
+  payme:
+    merchant-id: ${PAYME_MERCHANT_ID:}
+    checkout-url: ${PAYME_CHECKOUT_URL:https://test.paycom.uz}
+    callback-url: ${PAYME_CALLBACK_URL:http://localhost:5173/billing}
+
 server:
   shutdown: graceful
   forward-headers-strategy: framework
