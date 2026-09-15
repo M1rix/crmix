@@ -20,6 +20,7 @@ public class TenantEntity {
     @Column(nullable = false) private String name;
     @Column(name = "business_type", nullable = false) private String businessType;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "subscription_plan_id") private SubscriptionPlanEntity subscriptionPlan;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "next_subscription_plan_id") private SubscriptionPlanEntity nextSubscriptionPlan;
     @Column(name = "subscription_status", nullable = false) private String subscriptionStatus;
     @Column(name = "trial_ends_at") private Instant trialEndsAt;
     @Column(name = "subscription_expires_at") private Instant subscriptionExpiresAt;
@@ -49,6 +50,7 @@ public class TenantEntity {
     public String getSlug() { return slug; }
     public String getName() { return name; }
     public SubscriptionPlanEntity getSubscriptionPlan() { return subscriptionPlan; }
+    public SubscriptionPlanEntity getNextSubscriptionPlan() { return nextSubscriptionPlan; }
     public SubscriptionStatus getSubscriptionStatus() { return SubscriptionStatus.valueOf(subscriptionStatus); }
     public Instant getTrialEndsAt() { return trialEndsAt; }
     public Instant getSubscriptionExpiresAt() { return subscriptionExpiresAt; }
@@ -56,10 +58,33 @@ public class TenantEntity {
 
     public void activate(SubscriptionPlanEntity plan, Instant now) {
         this.subscriptionPlan = plan;
+        this.nextSubscriptionPlan = null;
         this.subscriptionStatus = SubscriptionStatus.ACTIVE.name();
         var base = subscriptionExpiresAt != null && subscriptionExpiresAt.isAfter(now) ? subscriptionExpiresAt : now;
         this.subscriptionExpiresAt = base.plusSeconds(30L * 24 * 60 * 60);
         this.updatedAt = now;
+    }
+
+    public void schedulePlanChange(SubscriptionPlanEntity plan, Instant now) {
+        this.nextSubscriptionPlan = plan;
+        this.updatedAt = now;
+    }
+
+    public void cancelScheduledPlanChange(Instant now) {
+        this.nextSubscriptionPlan = null;
+        this.updatedAt = now;
+    }
+
+    public void expireOrApplyScheduledPlan(Instant now) {
+        if (nextSubscriptionPlan != null) {
+            this.subscriptionPlan = nextSubscriptionPlan;
+            this.nextSubscriptionPlan = null;
+            this.subscriptionStatus = SubscriptionStatus.ACTIVE.name();
+            this.subscriptionExpiresAt = null;
+            this.updatedAt = now;
+            return;
+        }
+        suspend(now);
     }
 
     public void suspend(Instant now) {
